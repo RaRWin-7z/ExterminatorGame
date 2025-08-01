@@ -1,4 +1,5 @@
-('C:\\Exterminator of Insects\\build\\Exterminator\\PYZ-00.pyz',
+('C:\\Users\\Beiçoladas\\OneDrive\\Desktop\\Exterminator of '
+ 'Insects\\build\\Exterminator\\PYZ-00.pyz',
  [('__future__',
    'C:\\Users\\Beiçoladas\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\__future__.py',
    'PYMODULE'),
