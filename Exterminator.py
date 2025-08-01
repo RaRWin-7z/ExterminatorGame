@@ -1,24 +1,44 @@
 import pygame
-pygame.init()
+import sys
+import os
+import subprocess
 from random import randint
+
+def recurso(caminho_relativo):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, caminho_relativo)
+    return os.path.join(os.path.abspath("."), caminho_relativo)
+
+pygame.init()
+pygame.mixer.init()
 
 window = pygame.display.set_mode((900, 1020))
 title = pygame.display.set_caption("Exterminator")
 
-sky = pygame.image.load('sky.png')
-wall = pygame.image.load('wall.png')
+sky = pygame.image.load(recurso('imgs/sky.png'))
+wall = pygame.image.load(recurso('imgs/wall.png'))
 
-monster = pygame.image.load('monster.png')
+winpage = pygame.image.load(recurso('imgs/You Win Page.png'))
+monsterkill = 0
+monstercnt = pygame.image.load(recurso(f'imgs/monstercnt{monsterkill}.png'))
+
+pygame.mixer.music.load(recurso("sounds/Pixel Party Dash.mp3"))
+pygame.mixer.music.play(loops=-1)
+pygame.mixer.music.set_volume(0.4)
+
+damage = pygame.mixer.Sound(recurso("sounds/damage.mp3"))
+effect = pygame.mixer.Sound(recurso("sounds/effect.mp3"))
+
+monster = pygame.image.load(recurso('imgs/monster.png'))
 monster = pygame.transform.scale(monster, (260, 370))
 
-projectile_img = pygame.image.load('projectile.png')
+projectile_img = pygame.image.load(recurso('imgs/projectile.png'))
 projectile_img = pygame.transform.scale(projectile_img, (70, 70))
 
-inseticida = pygame.image.load('inseticide.png')
+inseticida = pygame.image.load(recurso('imgs/inseticide.png'))
 inseticida = pygame.transform.scale(inseticida, (180.67, 271))
 
 gameover = False
-
 monsters = []
 
 pos_x_e = 50
@@ -41,15 +61,15 @@ def generate_monster_d():
 
 lifebarcnt = 1
 
-def lifebarc_draw():
+def lifebarc_draw(monsterkill):
     global lifebarcnt
     global gameover
-
     if lifebarcnt >= 4:
         gameover = True
-    lifebar = pygame.image.load('lifebar' + str(lifebarcnt) + '.png')
-    lifebar = pygame.transform.scale(lifebar, (384.23, 80.3))
-    window.blit(lifebar, (-10, 20))
+    if monsterkill < 19:
+        lifebar = pygame.image.load(recurso(f'imgs/lifebar{lifebarcnt}.png'))
+        lifebar = pygame.transform.scale(lifebar, (384.23, 80.3))
+        window.blit(lifebar, (-10, 20))
 
 def spawn():
     number = randint(1, 2)
@@ -60,13 +80,16 @@ def spawn():
 
 last_spawn = 0
 
-def cooldown():
+def cooldown(monsterkill):
     global last_spawn
-    cooldown_time = 1000
+    cooldown_time = 700
     tempo_atual = pygame.time.get_ticks()
     if tempo_atual - last_spawn >= cooldown_time:
         spawn()
         last_spawn = tempo_atual
+
+    if monsterkill > 19:
+        cooldown_time = 0
 
 projectiles = []
 last_shot_time = 0
@@ -74,10 +97,24 @@ last_shot_time = 0
 insE = False
 insD = False
 
-loop = True
-while loop:
+def draw1():
     window.blit(sky, (0, 0))
     window.blit(wall, (400, 0))
+
+def draw2():
+    if insE:
+        window.blit(inseticida, (100, 730))
+    if insD:
+        window.blit(inseticida, (600, 730))
+
+noWin = True
+
+loop = True
+while loop:
+
+    if monsterkill < 19:
+        draw1()
+        draw2()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -91,13 +128,8 @@ while loop:
                 insD = True
                 insE = False
 
-    if insE:
-        window.blit(inseticida, (100, 730))
-    if insD:
-        window.blit(inseticida, (600, 730))
-
     current_time = pygame.time.get_ticks()
-    if current_time - last_shot_time >= 1000:
+    if current_time - last_shot_time >= 700:
         if insE:
             proj_x = 100 + inseticida.get_width() // 2 - 15
         elif insD:
@@ -112,7 +144,7 @@ while loop:
             last_shot_time = current_time
 
     for proj in projectiles[:]:
-        proj.y -= 7
+        proj.y -= 20
         window.blit(projectile_img, (proj.x, proj.y))
         if proj.y < 0:
             projectiles.remove(proj)
@@ -124,17 +156,37 @@ while loop:
 
         if m[2] >= 509 and not m[4]:
             lifebarcnt += 1
+            damage.play()
             m[4] = True
+            
 
         for proj in projectiles[:]:
-            if proj.colliderect(m[3]):
+            if proj.colliderect(m[3]) and monsterkill < 19:
                 monsters.remove(m)
                 projectiles.remove(proj)
+                effect.play()
+                monsterkill += 1
+                monstercnt = pygame.image.load(recurso(f'imgs/monstercnt{min(monsterkill, 19)}.png'))
                 break
 
-    cooldown()
-    lifebarc_draw()
+
+    cooldown(monsterkill)
+    lifebarc_draw(monsterkill)
     if gameover:
         loop = False
+    if gameover and monsterkill >= 19:
+        pass
+
+    window.blit(monstercnt, (700, 20))
+    if monsterkill >= 19:
+        window.blit(winpage, (0, 0))
+        effect.set_volume(0.0)
+        damage.set_volume(0.0)
 
     pygame.display.update()
+
+try:
+    import pygame
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pygame"])
+    import pygame
