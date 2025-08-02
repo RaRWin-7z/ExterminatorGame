@@ -19,6 +19,8 @@ sky = pygame.image.load(recurso('imgs/sky.png'))
 wall = pygame.image.load(recurso('imgs/wall.png'))
 
 winpage = pygame.image.load(recurso('imgs/You Win Page.png'))
+losepage = pygame.image.load(recurso('imgs/You Lose Page.png'))
+
 monsterkill = 0
 monstercnt = pygame.image.load(recurso(f'imgs/monstercnt{monsterkill}.png'))
 
@@ -61,10 +63,10 @@ def generate_monster_d():
 
 lifebarcnt = 1
 
-def lifebarc_draw(monsterkill):
+def lifebarc_draw():
     global lifebarcnt
     global gameover
-    if lifebarcnt >= 4:
+    if lifebarcnt >= 10:
         gameover = True
     if monsterkill < 19:
         lifebar = pygame.image.load(recurso(f'imgs/lifebar{lifebarcnt}.png'))
@@ -80,9 +82,11 @@ def spawn():
 
 last_spawn = 0
 
-def cooldown(monsterkill):
+def cooldown():
     global last_spawn
-    cooldown_time = 700
+    cooldown_time = 1700
+    if monsterkill >= 5:
+        cooldown_time = 1300
     tempo_atual = pygame.time.get_ticks()
     if tempo_atual - last_spawn >= cooldown_time:
         spawn()
@@ -99,7 +103,7 @@ insD = False
 
 def draw1():
     window.blit(sky, (0, 0))
-    window.blit(wall, (400, 0))
+    window.blit(wall, (400, -100))
 
 def draw2():
     if insE:
@@ -136,7 +140,6 @@ while loop:
             proj_x = 600 + inseticida.get_width() // 2 - 15
         else:
             proj_x = None
-
         if proj_x is not None:
             proj_y = 730
             proj_rect = pygame.Rect(proj_x, proj_y, projectile_img.get_width(), projectile_img.get_height())
@@ -144,13 +147,13 @@ while loop:
             last_shot_time = current_time
 
     for proj in projectiles[:]:
-        proj.y -= 20
+        proj.y -= 25
         window.blit(projectile_img, (proj.x, proj.y))
         if proj.y < 0:
             projectiles.remove(proj)
 
     for m in monsters[:]:
-        m[2] += 3
+        m[2] += 5
         m[3].topleft = (m[1], m[2])
         window.blit(m[0], (m[1], m[2]))
 
@@ -169,9 +172,11 @@ while loop:
                 monstercnt = pygame.image.load(recurso(f'imgs/monstercnt{min(monsterkill, 19)}.png'))
                 break
 
+            if proj.y == 20:
+                projectiles.remove(proj)
 
-    cooldown(monsterkill)
-    lifebarc_draw(monsterkill)
+    cooldown()
+    lifebarc_draw()
     if gameover:
         loop = False
     if gameover and monsterkill >= 19:
@@ -183,6 +188,10 @@ while loop:
         effect.set_volume(0.0)
         damage.set_volume(0.0)
 
+    if lifebarcnt == 4:
+        window.blit(losepage, (0, 0))
+        effect.set_volume(0.0)
+        damage.set_volume(0.0)
     pygame.display.update()
 
 try:
